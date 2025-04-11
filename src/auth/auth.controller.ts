@@ -29,6 +29,14 @@ export class AuthController {
         return res.status(200).json({message: 'Logged out successfully'})
     }
 
+    @Post("refresh")
+    @HttpCode(HttpStatus.OK)
+    async refresh(@Req() req: Request, @Res() res:Response){
+        const result = await this.authService.refreshToken(req)
+        return res.status(200).json(result)
+        
+    }
+
     @UseGuards(JwtAuthGuard)
     @Get('profile')
     getProfile(@Request() req: any){
