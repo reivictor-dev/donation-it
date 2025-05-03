@@ -31,13 +31,38 @@ export class UsersService {
         const user = this.userRepository.create({
                 name,
                 email,
-                password: hashedPass
+                password: hashedPass,
+                role: 'USER',
+                created_at: new Date(),
+                updated_at: new Date()
             })
         
         await this.userRepository.save(user)
         return user
     }
 
+    async update(name: string, email: string, currentPassword: string, newPassword: string): Promise<User>{
+        const user = await this.findUserByEmail(email)
+
+        if(!user){
+            throw new HttpException('User not found', HttpStatus.NOT_FOUND)
+        }
+
+        const isMatch = await this.passwordService.comparePass(currentPassword, user.password)
+        if(!isMatch){
+            throw new HttpException('Invalid credentials', HttpStatus.UNAUTHORIZED)
+        }
+
+        const hashedPass = await this.passwordService.hashPassword(newPassword)
+
+        user.name = name
+        user.password = hashedPass
+        user.updated_at = new Date()
+
+        await this.userRepository.save(user)
+        return user
+    }
+    
     async validateCredentials({email, password}: {email: string, password: string}): Promise<User> {
         const user = await this.findUserByEmail(email)
         if(!user){

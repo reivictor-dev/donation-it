@@ -8,5 +8,9 @@ import { UsersModule } from 'src/users/users.module';
 
 @Module({
   imports: [DbConfigModule, UsersModule, AuthModule, ItemsModule, LocationModule],
+  providers: [{
+    provide: 'APP_GUARD',
+    useClass: AuthModule,
+  }],
 })
 export class AppModule {}

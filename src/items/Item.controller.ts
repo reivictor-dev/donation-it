@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Request, UseGuards } from "@nestjs/common";
-import { JwtAuthGuard } from "src/auth/jwt/jwt.authguard";
+import { JwtAuthGuard } from "src/auth/guards/jwt.authguard";
 import { itemsService } from "./Item.service";
 import { CreateItemDto } from "./dto/Create-Item.dto";
 

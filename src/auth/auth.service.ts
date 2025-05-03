@@ -1,9 +1,7 @@
-import { Injectable, InternalServerErrorException, Post, Req, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Req, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from 'src/users/users.service';
-
 import { ConfigService } from '@nestjs/config';
-import path from 'path';
 
 @Injectable()
 export class AuthService {
