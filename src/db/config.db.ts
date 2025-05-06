@@ -2,7 +2,7 @@ import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { User } from "./entities/user.entity";
 import { Category } from "./entities/category.entity";
-import { DonationItem } from "./entities/donate-item.entity";
+import { DonationItem } from "./entities/item.entity";
 import { DonationHistory } from "./entities/donate-history.entity";
 import { Location } from "./entities/location.entity";
 import { ConfigModule, ConfigService } from "@nestjs/config";

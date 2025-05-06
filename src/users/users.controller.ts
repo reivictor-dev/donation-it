@@ -1,10 +1,15 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { User } from 'src/db/entities/user.entity';
+import { UploadService } from 'src/utils/upload.service';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('users')
 export class UsersController {
-    constructor(private readonly usersService: UsersService){}
+    constructor(
+        private readonly usersService: UsersService,
+        private readonly uploadService: UploadService,
+    ){}
 
     @Get()
     async findAll(): Promise<User[]>{
@@ -16,17 +21,25 @@ export class UsersController {
         return this.usersService.findById(id)
     }
     
-    @Post()
+    @UseInterceptors(FileInterceptor('profile_img'))
+    @Post("register")
     async create(
         @Body('name') name: string,
         @Body('email') email: string,
         @Body('password') password: string,
-
+        @UploadedFile() file: Express.Multer.File,
     ){
-        return this.usersService.create(name,email,password)
+        const user = await this.usersService.create(name,email,password)
+        if(file){
+            const path = this.uploadService.saveImage(file, 'user', user.id)
+            user.profile_img = path
+            await this.usersService.save(user)
+
+        return user
+        }
     }
 
-    @Post()
+    @Post("update")
     async update(
         @Body('name') name: string,
         @Body('email') email: string,
@@ -35,4 +48,7 @@ export class UsersController {
     ){
         return this.usersService.update(name,email,currentPassword,newPassword)
     }
+
+
+
 }

@@ -1,11 +1,15 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/db/entities/user.entity';
+import { Roles } from 'src/decorators/roles.decorators';
 import { PasswordService } from 'src/utils/password.service';
 import { Repository } from 'typeorm';
 
 @Injectable()
 export class UsersService {
+    save(user: User) {
+        throw new Error('Method not implemented.');
+    }
     constructor(
         @InjectRepository(User)
         private readonly userRepository: Repository<User>,
@@ -85,11 +89,38 @@ export class UsersService {
         return foundUser.id
     }
 
+    @Roles('USER')
     async findUserByEmail(email: string): Promise<User|undefined> {
-         const id = await this.findIdByUserEmail(email)
+        const id = await this.findIdByUserEmail(email)
 
         const user = await this.findById(id)
 
         return user != undefined ? user : undefined
+    }
+
+    @Roles('ADMIN')
+    async deleteUser(id: number): Promise<void> {
+        const user = await this.findById(id)
+
+        if(!user){
+            throw new HttpException('User not found', HttpStatus.NOT_FOUND)
+        }
+
+        await this.userRepository.delete(id)
+        return
+    }
+
+    async updateProfileImg(id: number, profilePicture: string): Promise<User> {
+        const user = await this.findById(id)
+
+        if(!user){
+            throw new HttpException('User not found', HttpStatus.NOT_FOUND)
+        }
+
+        user.profile_img = profilePicture
+        user.updated_at = new Date()
+
+        await this.userRepository.save(user)
+        return user
     }
 }

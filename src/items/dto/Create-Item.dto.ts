@@ -1,7 +1,8 @@
 export class CreateItemDto {
     title: string
     description: string
-    url_image?: string
+    item_image: string
+    item_category: string
     locationId: number
 
 }

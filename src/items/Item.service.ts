@@ -1,32 +1,24 @@
 import { ForbiddenException, Inject, Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { DonationItem } from "src/db/entities/donate-item.entity";
+import { Item } from "src/db/entities/item.entity";
 import { Repository } from "typeorm";
 import { CreateItemDto } from "./dto/Create-Item.dto";
 import { User } from "src/db/entities/user.entity";
-import { Location } from "src/db/entities/location.entity";
 
 @Injectable()
 export class itemsService{
-    @InjectRepository(DonationItem)
-    private itemsRepo: Repository<DonationItem>
-    @InjectRepository(Location)
-    private locationRepo: Repository<Location>
+    @InjectRepository(Item)
+    private itemsRepo: Repository<Item>
 
     async createItem(dto: CreateItemDto, user: User){
-        const location = await this.locationRepo.findOneBy({id: dto.locationId});
-        if(!location){
-            throw new Error(`Location with ID ${dto.locationId} not found`)
-        }
-
         const item = this.itemsRepo.create({
             ...dto,
-            description: dto.description,
-            location,
-            owner: user
+            owner: user,
+            reserved: false,
+            created_at: new Date(),
+            updated_at: new Date()
         })
-
-        this.itemsRepo.save(item)
+        await this.itemsRepo.save(item)
     }
 
     async findAll(){
