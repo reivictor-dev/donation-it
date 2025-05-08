@@ -1,67 +1,68 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/db/entities/user.entity';
-import { Roles } from 'src/decorators/roles.decorators';
 import { PasswordService } from 'src/utils/password.service';
 import { Repository } from 'typeorm';
+import { UserResponseDto } from './dto/user-response.dto';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { toUserResponseDto } from 'src/utils/user-mapper';
 
 @Injectable()
 export class UsersService {
-    save(user: User) {
-        throw new Error('Method not implemented.');
-    }
     constructor(
         @InjectRepository(User)
         private readonly userRepository: Repository<User>,
         private readonly passwordService: PasswordService
     ){}
 
-    async findAll(): Promise<User[]>{
-        return this.userRepository.find()
+    async findAll(): Promise<UserResponseDto[]>{
+        const users = await this.userRepository.find()
+        return users.map(user => toUserResponseDto(user))
     }
 
     async findById(id : number): Promise<User | null>{
-        return this.userRepository.findOne({ where: { id } })
+        return await this.userRepository.findOne({ where: { id }}) 
     }
 
-    async create(name: string, email: string, password: string): Promise<User>{
-        const userInDb = await this.findUserByEmail(email)
+    async create(createUserDTO: CreateUserDto): Promise<UserResponseDto>{
+        const { name, email, password, phone, address, profile_img } = createUserDTO
+        const existingUser = await this.findUserByEmail(email)
+        if(existingUser){
+            throw new HttpException('User already exists', HttpStatus.BAD_REQUEST)
+        }  
 
-        if(userInDb){
-            throw new HttpException('Email already registered', HttpStatus.BAD_REQUEST)
-        }
         const hashedPass = await this.passwordService.hashPassword(password)
 
         const user = this.userRepository.create({
-                name,
-                email,
-                password: hashedPass,
-                role: 'USER',
-                created_at: new Date(),
-                updated_at: new Date()
-            })
-        
+            name,
+            email, 
+            password: hashedPass,
+            phone,
+            address,
+            profile_img: profile_img || undefined,
+            created_at: new Date(),
+            updated_at: new Date()
+        })
         await this.userRepository.save(user)
-        return user
+        return toUserResponseDto(user)
     }
 
-    async update(name: string, email: string, currentPassword: string, newPassword: string): Promise<User>{
-        const user = await this.findUserByEmail(email)
+    async update(id: number, updateUserDTO: UpdateUserDto): Promise<User>{
+        const { name, email, phone, address, profile_img } = updateUserDTO
+        const user = await this.findById(id)
 
         if(!user){
             throw new HttpException('User not found', HttpStatus.NOT_FOUND)
         }
 
-        const isMatch = await this.passwordService.comparePass(currentPassword, user.password)
-        if(!isMatch){
-            throw new HttpException('Invalid credentials', HttpStatus.UNAUTHORIZED)
+        if (email) {
+            const existingUser = await this.findUserByEmail(email)
+            if (existingUser && existingUser.id !== id) {
+                throw new HttpException('Email already in use', HttpStatus.BAD_REQUEST)
+            }
         }
-
-        const hashedPass = await this.passwordService.hashPassword(newPassword)
-
-        user.name = name
-        user.password = hashedPass
-        user.updated_at = new Date()
+        
 
         await this.userRepository.save(user)
         return user
@@ -89,7 +90,6 @@ export class UsersService {
         return foundUser.id
     }
 
-    @Roles('USER')
     async findUserByEmail(email: string): Promise<User|undefined> {
         const id = await this.findIdByUserEmail(email)
 
@@ -98,7 +98,6 @@ export class UsersService {
         return user != undefined ? user : undefined
     }
 
-    @Roles('ADMIN')
     async deleteUser(id: number): Promise<void> {
         const user = await this.findById(id)
 
@@ -123,4 +122,5 @@ export class UsersService {
         await this.userRepository.save(user)
         return user
     }
+
 }
