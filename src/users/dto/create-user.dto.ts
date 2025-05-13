@@ -1,5 +1,10 @@
-import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, Length } from "class-validator";
+import { IsEmail, IsEnum, IsNotEmpty, IsOptional, isString, IsString, IsStrongPassword, Length } from "class-validator";
 import { User } from "src/db/entities/user.entity";
+
+export enum Roles {
+    USER = 'USER',
+    ADMIN = 'ADMIN',
+}
 
 export class CreateUserDto {
     @IsString()
@@ -13,13 +18,30 @@ export class CreateUserDto {
 
     @IsString()
     @IsNotEmpty()
+    @IsStrongPassword({
+        minLength: 6,
+        minLowercase: 1,
+        minUppercase: 1,
+        minNumbers: 1,
+        minSymbols: 0,
+    })
     @Length(6, 100)
     password: string;
 
     @IsString()
     @IsNotEmpty()
     @Length(6, 100)
-    phone: string; 
+    confirmPassword: string; // For password confirmation
+
+    @IsEnum(Roles)
+    @IsOptional()
+    @IsNotEmpty()
+    role: Roles;
+
+    @IsString()
+    @IsNotEmpty()
+    @Length(6, 100)
+    phone: string;
 
     @IsString()
     @IsNotEmpty()

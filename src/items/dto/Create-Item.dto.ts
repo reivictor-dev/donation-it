@@ -3,6 +3,5 @@ export class CreateItemDto {
     description: string
     item_image: string
     item_category: string
-    locationId: number
 
 }

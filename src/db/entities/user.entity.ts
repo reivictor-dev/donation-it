@@ -21,7 +21,7 @@ export class User{
     @Column({nullable: false, length: 100})
     password: string
 
-    @Column({length: 100})
+    @Column({nullable: true ,length: 30})
     phone: string
 
     @Column({length: 100})

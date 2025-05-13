@@ -8,11 +8,6 @@ import { JwtAuthGuard } from './guards/jwt.authguard';
 export class AuthController {
     constructor(private readonly authService: AuthService){}
 
-    @Post('signUp')
-    signUp(@Body() signInDto: Record<string, any>){
-        return this.authService.signUp(signInDto.name, signInDto.email, signInDto.password)
-    }
-
     @Post('signIn')
     async signIn(@Body() signInDto: { email: string; password: string }, @Res() res: Response) {
         return this.authService.signIn(signInDto.email, signInDto.password, res);

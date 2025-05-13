@@ -7,6 +7,7 @@ import { UserResponseDto } from './dto/user-response.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { toUserResponseDto } from 'src/utils/user-mapper';
+import { checkUserPermission } from 'src/utils/auth.utils';
 
 @Injectable()
 export class UsersService {
@@ -26,11 +27,44 @@ export class UsersService {
     }
 
     async create(createUserDTO: CreateUserDto): Promise<UserResponseDto>{
-        const { name, email, password, phone, address, profile_img } = createUserDTO
+        const { name, email, password,confirmPassword, phone, address, profile_img } = createUserDTO
         const existingUser = await this.findUserByEmail(email)
         if(existingUser){
             throw new HttpException('User already exists', HttpStatus.BAD_REQUEST)
         }  
+
+        if(password !== confirmPassword){
+            throw new HttpException('Passwords do not match', HttpStatus.BAD_REQUEST)
+        }
+
+        const hashedPass = await this.passwordService.hashPassword(password)
+
+        const user = this.userRepository.create({
+            name,
+            email, 
+            password: hashedPass,
+            phone,
+            role: 'USER',
+            address,
+            profile_img: profile_img || undefined,
+            created_at: new Date(),
+            updated_at: new Date()
+        })
+        await this.userRepository.save(user)
+        return toUserResponseDto(user)
+    }
+
+    // Create admin user
+    async createAdmin(createUserDTO: CreateUserDto): Promise<UserResponseDto>{
+        const { name, email, password,confirmPassword, phone, address, profile_img } = createUserDTO
+        const existingUser = await this.findUserByEmail(email)
+        if(existingUser){
+            throw new HttpException('User already exists', HttpStatus.BAD_REQUEST)
+        }  
+
+        if(password !== confirmPassword){
+            throw new HttpException('Passwords do not match', HttpStatus.BAD_REQUEST)
+        }
 
         const hashedPass = await this.passwordService.hashPassword(password)
 
@@ -42,13 +76,14 @@ export class UsersService {
             address,
             profile_img: profile_img || undefined,
             created_at: new Date(),
-            updated_at: new Date()
+            updated_at: new Date(),
+            role: 'ADMIN'
         })
         await this.userRepository.save(user)
         return toUserResponseDto(user)
     }
 
-    async update(id: number, updateUserDTO: UpdateUserDto): Promise<User>{
+    async update(id: number, updateUserDTO: UpdateUserDto): Promise<UserResponseDto>{
         const { name, email, phone, address, profile_img } = updateUserDTO
         const user = await this.findById(id)
 
@@ -63,6 +98,32 @@ export class UsersService {
             }
         }
         
+        user.updated_at = new Date()
+
+        await this.userRepository.save(user)
+        return toUserResponseDto(user)
+    }
+
+    async updatePassword(id: number, updateUserDTO: UpdateUserDto): Promise<User>{
+        const { currentPassword, newPassword } = updateUserDTO
+        const user = await this.findById(id)
+
+        if(!user){
+            throw new HttpException('User not found', HttpStatus.NOT_FOUND)
+        }
+
+        if(!currentPassword || !newPassword){
+            throw new HttpException('Current password and new password are required', HttpStatus.BAD_REQUEST)
+        }
+
+        const isMatch = await this.passwordService.comparePass(currentPassword, user.password)
+        if(!isMatch){
+            throw new HttpException('Invalid credentials', HttpStatus.UNAUTHORIZED)
+        }
+
+        const hashedPass = await this.passwordService.hashPassword(newPassword)
+        user.password = hashedPass
+        user.updated_at = new Date()
 
         await this.userRepository.save(user)
         return user
@@ -80,22 +141,13 @@ export class UsersService {
         }
         return user
     }
-    
-    //If not found the user, cheks with IF == 0
-    async findIdByUserEmail(email : string): Promise<number>{
-        const foundUser = await this.userRepository.findOne({ where: {email: email}})
-        if(foundUser == null){
-            return 0
-        }
-        return foundUser.id
-    }
 
-    async findUserByEmail(email: string): Promise<User|undefined> {
-        const id = await this.findIdByUserEmail(email)
-
-        const user = await this.findById(id)
-
-        return user != undefined ? user : undefined
+    async findUserByEmail(email: string): Promise<User|null>{ 
+            const foundUser = await this.userRepository.findOne({ where: {email: email}})
+            if(foundUser == null){
+                return null
+            }
+            return foundUser
     }
 
     async deleteUser(id: number): Promise<void> {

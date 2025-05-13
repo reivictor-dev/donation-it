@@ -2,9 +2,8 @@ import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { User } from "./entities/user.entity";
 import { Category } from "./entities/category.entity";
-import { DonationItem } from "./entities/item.entity";
+import { Item } from "./entities/item.entity";
 import { DonationHistory } from "./entities/donate-history.entity";
-import { Location } from "./entities/location.entity";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 
 @Module({
@@ -20,9 +19,10 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
                 username: configService.get<string>('DB_USER'),
                 password: configService.get<string>('DB_PASS'),
                 database: configService.get<string>('DB_NAME'),
-                entities:[User, Category, Location, DonationItem, DonationHistory],
+                entities:[User, Category, Item, DonationHistory],
                 synchronize: true,
-                autoLoadEntities: true
+                autoLoadEntities: true,
+                // migrations: [], REMEMBER TO ADD MIGRATIONS 
             })
         })
     ],

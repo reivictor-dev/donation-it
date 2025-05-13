@@ -16,7 +16,7 @@ export class AuthService {
             email,
             password: pass
         })
-        const payload = {sub: user.id, email: user.email}
+        const payload = {sub: user.id, email: user.email, role: user.role}
 
         const accessToken = this.jwtService.sign(
             {...payload, type: "access"},
@@ -70,23 +70,6 @@ export class AuthService {
         } catch (error) {
             throw new UnauthorizedException('Invalid refresh token')
         }
-    }
-
-    async signUp(name:string, email: string, pass: string, ){
-        const user = await this.userService.create(
-            name,
-            email,
-            pass
-        )
-
-        if(!user){
-            throw new InternalServerErrorException()
-        }
-
-        const { password, ...userWithoutPassword } = user;
-        return userWithoutPassword;
-    }
-
-    
+    }   
 }
 
